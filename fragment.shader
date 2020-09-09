@@ -4,6 +4,19 @@ in vec2 vertex;
 uniform float t;
 uniform float ratio;
 #define M_PI 3.1415926535897932384626433832795
+
+vec3 rotateX(vec3 v, float r) {
+  return vec3(v.x,cos(r)*v.y+-sin(r)*v.z,sin(r)*v.y+cos(r)*v.z);
+}
+
+vec3 rotateY(vec3 v, float r) {
+  return vec3(cos(r)*v.x+-sin(r)*v.z,v.y,sin(r)*v.x+cos(r)*v.z);
+}
+
+vec3 rotateZ(vec3 v, float r) {
+  return vec3(cos(r)*v.x+-sin(r)*v.y,sin(r)*v.x+cos(r)*v.y,v.z);
+}
+
 float smin( float a, float b, float k )
 {
     a = pow( a, k ); b = pow( b, k );
@@ -74,14 +87,19 @@ float sphere(vec3 v, vec3 loc, float r) {
 }
 
 float sdf(vec3 v) {
-	//return sdBox(v-vec3(0,10,0),vec3(1))-sin(t)-1;
+  v = rotateY(v,t);
+  v = rotateZ(v,t);
+  v = rotateX(v,t);
+	//return sdBox(v-vec3(0,0,0),vec3(1))-sin(t)-1;
+	//return (1-(sin(t)+1)/2)*(sdBox(v-vec3(0,0,0),vec3(0.9))-0.1)+(sin(t)+1)*sphere(v,vec3(0,0,0),1)/2;
 	//return (1-(sin(t/2)+1)/2)*(sdBox(v,vec3(0.6))-0.4)+(sin(t/2)+1)*sdTorus(v,vec2(1,0.5))/2;
-	//return (1-(sin(t)+1)/2)*(sdBox(v-vec3(0,10,0),vec3(0.9))-0.1)+(sin(t)+1)*sphere(v,vec3(0,10,0),1)/2;
-	//return smin(sphere(v,vec3(sin(t*10),0,0),0.5),sphere(v,vec3(-sin(t*10)*1.5,0,0),1),0.19);
+	return (1-(sin(1.3*t/2)+1)/2)*sdTorus(v,vec2(1,0.5))+(sin(1.3*t/2)+1)*min(sdTorus(v+vec3(2,0,0),vec2(1,0.5)),sdTorus(v-vec3(2,0,0),vec2(1,0.5)))/2;
+	//return (1-(sin(t/2)+1)/2)*(sdBox(v,vec3(1,0.6,0.6))-0.4)+(sin(t/2)+1)*min(sdTorus(v+vec3(1,0,0),vec2(1,0.5)),sdTorus(v-vec3(1,0,0),vec2(1,0.5)))/2;
+	//return smin(sphere(v,vec3(sin(t*10),0,0),0.5),sphere(v,vec3(-sin(t*10)*1.5,0,0),1),0.17);
 	//return max(sphere(v,vec3(0,0,0),1.5),-sphere(v,vec3(sin(t),1.5,0),0.5));
 	//return sdOctahedron(v,1)-0.3;
 	//return max(max(sdCappedCylinderX(v,1,1),sdCappedCylinderY(v,1,1)),sdCappedCylinderZ(v,1,1));
-	return sdCone(v,vec2(1),1)-0.1;
+	//return sdCone(v,vec2(1),1)-0.1;
 	//return max(abs(sphere(v,vec3(0),1))-0.1,sdBox(v+vec3(0,0,1),vec3(2,2,1)));
 }
 
@@ -97,25 +115,49 @@ vec3 estimateNormal(vec3 p) {
     ));
 }
 
-void main() {
-	float hit;
-	vec3 origin = vec3(10*cos(-t),10*sin(-t),0);
-	vec2 v = vec2(vertex.x-0.5,1);
-	vec3 dir = vec3(cos(-t*1+M_PI/2)*v.x-sin(-t*1+M_PI/2)*v.y,sin(-t*1+M_PI/2)*v.x+cos(-t*1+M_PI/2)*v.y,(vertex.y-0.5)/ratio);
-	int count = 0;
-	while(sdf(origin)>0.01 && count < 1000 && sdf(origin)<1000) {
+vec3 lightCalc(vec3 v, vec3 pos, vec3 col, vec3 normal,vec3 cameraPos, float specularCoeff, float specpower) {
+  vec3 toLight = normalize(pos - v);
+  vec3 toEye = normalize(cameraPos - pos);
+  vec3 reflection = reflect(-toLight, normal);
+  float specularAngleCos = max(0.0, dot(toEye, reflection));
+	vec3 diffuseFactor = col*max(0.0, dot(normal, toLight))*0.5;
+  vec3 specularFactor = col * pow(specularAngleCos, specpower) * specularCoeff;
+  return diffuseFactor+specularFactor;
+}
+
+void main() 
+{
+  int hit = 0;
+	//vec3 origin = vec3(10*cos(-t),10*sin(-t),0);
+	//vec2 v = vec2(vertex.x-0.5,1);
+	//vec3 dir = vec3(cos(-t*1+M_PI/2)*v.x-sin(-t*1+M_PI/2)*v.y,sin(-t*1+M_PI/2)*v.x+cos(-t*1+M_PI/2)*v.y,(vertex.y-0.5)/ratio);
+	vec3 origin = vec3(0,-10,0);
+  vec3 dir = vec3(vertex.x-0.5,1,(vertex.y-0.5)/ratio);
+  int count = 0;
+	while(hit == 0 && count < 1000 && sdf(origin)<1000) {
 		origin=march(origin,dir);
 		count++;
+    if (sdf(origin)<0.001) {
+      hit = 1;
+    }
 	}
 	vec3 normal = estimateNormal(origin);
-	vec3 toLight = normalize(vec3(10,-5,0) - origin);
-	vec3 diffuseFactor = vec3(1,0.7,0.7)*max(0.0, dot(normal, toLight))+vec3(0.1,0.1,0.1);
-	toLight = normalize(vec3(-5,-6,5) - origin);
-	diffuseFactor += vec3(0.7,1,0.7)*max(0.0, dot(normal, toLight));
-	toLight = normalize(vec3(-5,6,5) - origin);
-	diffuseFactor += vec3(0.7,0.7,1)*max(0.0, dot(normal, toLight));
-	
-	color = vec4(diffuseFactor.x,diffuseFactor.y,diffuseFactor.z,1);
-	//color = vec4(vec3(count/10), 1);
+	//vec3 toLight = normalize(vec3(10,-5,0) - origin);
+	//vec3 diffuseFactor = vec3(1,1.0,0.8)*max(0.0, dot(normal, toLight))*0.5;
+	//toLight = normalize(vec3(-5,-6,5) - origin);
+	//diffuseFactor += vec3(0.8,0.9,1)*max(0.0, dot(normal, toLight));
+	//toLight = normalize(vec3(-5,6,-5) - origin);
+	//diffuseFactor += vec3(1,0.9,0.8)*max(0.0, dot(normal, toLight))+vec3(0.1);
+  
+	if (hit==1) {
+    vec3 light1 = lightCalc(origin,vec3(10,-15,0),vec3(1,1,0.8),normal,vec3(0,-10,0),1,64);
+    vec3 light2 = lightCalc(origin,vec3(-10,0,3),vec3(1,1,0.7),normal,vec3(0,-10,0),1,64);
+    vec3 light3 = lightCalc(origin,vec3(1,-5,-4),vec3(0.7,0.8,1),normal,vec3(0,-10,0),1,3);
+	color = vec4(light1+light2+light3+vec3(0.1),1);
+  //color = vec4(diffuseFactor.x,diffuseFactor.y,diffuseFactor.z,1);
+	}else{
+   color = vec4(0,0,0,1); 
+  }//color = vec4(vec3(count/10), 1);
 	//color = vec4(0,origin.y,0,1);
+	//color = vec4(normal,1);
 }
