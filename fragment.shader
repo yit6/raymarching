@@ -4,6 +4,9 @@ in vec2 vertex;
 uniform float t;
 uniform float width;
 uniform float height;
+uniform float mouseX;
+uniform float mouseY;
+uniform float camdist;
 #define M_PI 3.1415926535897932384626433832795
 
 vec3 rotateX(vec3 v, float r) {
@@ -88,15 +91,16 @@ float sphere(vec3 v, vec3 loc, float r) {
 }
 
 float sdf(vec3 v) {
-  v = rotateZ(v,t);
+  v = rotateX(v,mouseY/width*M_PI*2);
+  v = rotateZ(v,mouseX/width*M_PI*2);
 	//return sdBox(v-vec3(0,0,0),vec3(1))-sin(t)-1;
 	//return (1-(sin(t)+1)/2)*(sdBox(v-vec3(0,0,0),vec3(0.9))-0.1)+(sin(t)+1)*sphere(v,vec3(0,0,0),1)/2;
 	//return (1-(sin(t/2)+1)/2)*(sdBox(v,vec3(0.6))-0.4)+(sin(t/2)+1)*sdTorus(v,vec2(1,0.5))/2;
-	//return (1-(sin(1.3*t/2)+1)/2)*sdTorus(v,vec2(1,0.5))+(sin(1.3*t/2)+1)*min(sdTorus(v+vec3(2,0,0),vec2(1,0.5)),sdTorus(v-vec3(2,0,0),vec2(1,0.5)))/2;
+	return (1-(sin(1.3*t/2)+1)/2)*sdTorus(v,vec2(1,0.5))+(sin(1.3*t/2)+1)*min(sdTorus(v+vec3(2,0,0),vec2(1,0.5)),sdTorus(v-vec3(2,0,0),vec2(1,0.5)))/2;
 	//return (1-(sin(t/2)+1)/2)*(sdBox(v,vec3(1,0.6,0.6))-0.4)+(sin(t/2)+1)*min(sdTorus(v+vec3(1,0,0),vec2(1,0.5)),sdTorus(v-vec3(1,0,0),vec2(1,0.5)))/2;
 	//return smin(sphere(v,vec3(sin(t*10),0,0),0.5),sphere(v,vec3(-sin(t*10)*1.5,0,0),1),0.17);
 	//return max(sphere(v,vec3(0,0,0),1.5),-sphere(v,vec3(sin(t),1.5,0),0.5));
-	return sdOctahedron(v,1)-0.3;
+	//return sdOctahedron(v,1)-0.3;
 	//return max(max(sdCappedCylinderX(v,1,1),sdCappedCylinderY(v,1,1)),sdCappedCylinderZ(v,1,1));
 	//return sdCone(v,vec2(1),1)-0.1;
 	//return max(abs(sphere(v,vec3(0),1))-0.1,sdBox(v+vec3(0,0,1),vec3(2,2,1)));
@@ -131,13 +135,14 @@ void main()
 	//vec3 origin = vec3(10*cos(-t),10*sin(-t),0);
 	//vec2 v = vec2(vertex.x-0.5,1);
 	//vec3 dir = vec3(cos(-t*1+M_PI/2)*v.x-sin(-t*1+M_PI/2)*v.y,sin(-t*1+M_PI/2)*v.x+cos(-t*1+M_PI/2)*v.y,(vertex.y-0.5)/ratio);
-	vec3 origin = vec3(0,-10,0);
+	vec3 origin = vec3(0,-camdist,0);
   vec3 dir = vec3((vertex.x-0.5)/height*width,1,(vertex.y-0.5));
+  
   int count = 0;
-	while(hit == 0 && count < 1000 && sdf(origin)<15) {
+	while(hit == 0 && count < 1000 && sdf(origin)<camdist*2) {
 		origin=march(origin,dir);
 		count++;
-    if (sdf(origin)<0.01) {
+    if (sdf(origin)<0.001) {
       hit = 1;
     }
 	}

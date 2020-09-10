@@ -5,7 +5,7 @@
 #include <chrono>
 #include <ctime>
 #include <sstream>
-
+double dist = 10;
 std::string readFile(const char* path) {
 	std::fstream file(path);
 	std::string line;
@@ -43,6 +43,10 @@ static unsigned int CompileShader( unsigned int type, const std::string& source)
 	return id;
 }
 
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	dist-=yoffset/4;
+}
+
 static unsigned int CreateShader(const std::string& vertexShader, const std::string& fragmentShader) {
 	unsigned int program = glCreateProgram();
 	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
@@ -64,7 +68,7 @@ int main(int argc, char *argv[])
 {
 
 	GLFWwindow* window;
-
+double xpos, ypos;
 	/* Initialize the library */
 	if (!glfwInit())
 		return -1;
@@ -133,6 +137,10 @@ int main(int argc, char *argv[])
 	int location=glGetUniformLocation(shader,"t");
 	int locationw=glGetUniformLocation(shader,"width");
 	int locationh=glGetUniformLocation(shader,"height");
+	int locationx=glGetUniformLocation(shader,"mouseX");
+	int locationy=glGetUniformLocation(shader,"mouseY");
+	int locationd=glGetUniformLocation(shader,"camdist");
+	glfwSetScrollCallback(window, scroll_callback);
 	float t=0;
 	glUniform1f(location, t);
 	/* Loop until the user closes the window */
@@ -142,6 +150,7 @@ int main(int argc, char *argv[])
 int display_h,display_w;
 	while (!glfwWindowShouldClose(window))
 	{
+		glfwGetCursorPos(window, &xpos, &ypos);
 		/* Render here */
 		glClear(GL_COLOR_BUFFER_BIT);
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
@@ -153,10 +162,13 @@ int display_h,display_w;
 
 		/* Poll for and process events */
 		glfwPollEvents();glfwGetFramebufferSize(window, &display_w, &display_h);
-			glViewport(0, 0, display_w, display_h);
+		glViewport(0, 0, display_w, display_h);
 	
-	glUniform1f(locationw, display_w);
-	glUniform1f(locationh, display_h);
+		glUniform1f(locationw, display_w);
+		glUniform1f(locationh, display_h);
+		glUniform1f(locationy, ypos);
+		glUniform1f(locationx, xpos);
+		glUniform1f(locationd, dist);
 	}
 
 	glfwTerminate();
