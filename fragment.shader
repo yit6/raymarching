@@ -89,14 +89,19 @@ float sdBox( vec3 p, vec3 b )
 float sphere(vec3 v, vec3 loc, float r) {
 	return length(v-loc) - r;
 }
-
+float opRep( in vec3 p, in vec3 c)
+{
+    vec3 q = mod(p+0.5*c,c)-0.5*c;
+    return sphere( q , vec3(0), 1);
+}
 float sdf(vec3 v) {
   v = rotateX(v,mouseY/width*M_PI*2);
-  v = rotateZ(v,mouseX/width*M_PI*2);
+  v = rotateY(v,mouseX/width*M_PI*2);
 	//return sdBox(v-vec3(0,0,0),vec3(1))-sin(t)-1;
+  return opRep(v, vec3(6));
 	//return (1-(sin(t)+1)/2)*(sdBox(v-vec3(0,0,0),vec3(0.9))-0.1)+(sin(t)+1)*sphere(v,vec3(0,0,0),1)/2;
 	//return (1-(sin(t/2)+1)/2)*(sdBox(v,vec3(0.6))-0.4)+(sin(t/2)+1)*sdTorus(v,vec2(1,0.5))/2;
-	return (1-(sin(1.3*t/2)+1)/2)*sdTorus(v,vec2(1,0.5))+(sin(1.3*t/2)+1)*min(sdTorus(v+vec3(2,0,0),vec2(1,0.5)),sdTorus(v-vec3(2,0,0),vec2(1,0.5)))/2;
+	//return (1-(sin(1.3*t/2)+1)/2)*sdTorus(v,vec2(1,0.5))+(sin(1.3*t/2)+1)*min(sdTorus(v+vec3(2,0,0),vec2(1,0.5)),sdTorus(v-vec3(2,0,0),vec2(1,0.5)))/2;
 	//return (1-(sin(t/2)+1)/2)*(sdBox(v,vec3(1,0.6,0.6))-0.4)+(sin(t/2)+1)*min(sdTorus(v+vec3(1,0,0),vec2(1,0.5)),sdTorus(v-vec3(1,0,0),vec2(1,0.5)))/2;
 	//return smin(sphere(v,vec3(sin(t*10),0,0),0.5),sphere(v,vec3(-sin(t*10)*1.5,0,0),1),0.17);
 	//return max(sphere(v,vec3(0,0,0),1.5),-sphere(v,vec3(sin(t),1.5,0),0.5));
@@ -104,7 +109,8 @@ float sdf(vec3 v) {
 	//return max(max(sdCappedCylinderX(v,1,1),sdCappedCylinderY(v,1,1)),sdCappedCylinderZ(v,1,1));
 	//return sdCone(v,vec2(1),1)-0.1;
 	//return max(abs(sphere(v,vec3(0),1))-0.1,sdBox(v+vec3(0,0,1),vec3(2,2,1)));
-  //return (1-(sin(1.3*t/2)+1)/2)*sdTorus(v,vec2(1,0.5))+(sin(1.3*t/2)+1)*min(sdTorus(v+vec3(2,0,0),vec2(1,0.5)),sdTorus(v-vec3(2,0,0),vec2(1,0.5)))/2 + .1*(sin(10*v.x) + sin(10*v.y) + sin(10*v.z));
+  //return (1-(sin(1.3*t/2)+1)/2)*sdTorus(v,vec2(1,0.5))+(sin(1.3*t/2)+1)*min(sdTorus(v+vec3(2,0,0),vec2(1,0.5)),sdTorus(v-vec3(2,0,0),vec2(1,0.5)))/2 + .05*(sin(6*v.x+t*4) + sin(4*v.y) + sin(4*v.z));
+  //return sdCappedCylinderY(v+vec3(0,0,1),.1,1);
 }
 
 vec3 march(vec3 v,vec3 dir) {
@@ -126,7 +132,7 @@ vec3 lightCalc(vec3 v, vec3 pos, vec3 col, vec3 normal,vec3 cameraPos, float spe
   float specularAngleCos = max(0.0, dot(toEye, reflection));
 	vec3 diffuseFactor = col*max(0.0, dot(normal, toLight))*0.5;
   vec3 specularFactor = col * pow(specularAngleCos, specpower) * specularCoeff;
-  return diffuseFactor+specularFactor;
+  return diffuseFactor;//+specularFactor;
 }
 
 void main() 
