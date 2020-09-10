@@ -1,8 +1,9 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-
 #include <fstream>
+#include <chrono>
+#include <ctime>
 #include <sstream>
 
 std::string readFile(const char* path) {
@@ -61,38 +62,22 @@ static unsigned int CreateShader(const std::string& vertexShader, const std::str
 
 int main(int argc, char *argv[])
 {
-	int x = 600;
-	int y = 600;
 
-	printf("Program name %s\n", argv[0]);
- 
-   if( argc == 3 ) {
-      printf("The argument supplied is %s\n", argv[1]);
-	  x = atof(argv[1]);
-      printf("The argument supplied is %s\n", argv[2]);
-	  y = atof(argv[2]);
-   }
-   else if( argc > 3 ) {
-      printf("Too many arguments supplied.\n");
-   }
-   else {
-      printf("Two argument expected.\n");
-   }
 	GLFWwindow* window;
 
 	/* Initialize the library */
 	if (!glfwInit())
 		return -1;
 	/* Create a windowed mode window and its OpenGL context */
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	window = glfwCreateWindow(x, y, "Raymarching", NULL, NULL);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+	window = glfwCreateWindow(600, 600, "Raymarching", NULL, NULL);
 	glfwSwapInterval(1);
 	if (!window)
 	{
 		glfwTerminate();
 		return -1;
 	}
-	float ratio = x/y;
+	
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 
@@ -146,11 +131,15 @@ int main(int argc, char *argv[])
 	unsigned int shader = CreateShader(vertexShader, fragmentShader);
 	glUseProgram(shader);
 	int location=glGetUniformLocation(shader,"t");
-	int locationr=glGetUniformLocation(shader,"ratio");
+	int locationw=glGetUniformLocation(shader,"width");
+	int locationh=glGetUniformLocation(shader,"height");
 	float t=0;
-	glUniform1f(location, 0.3);
-	glUniform1f(locationr, ratio);
+	glUniform1f(location, t);
 	/* Loop until the user closes the window */
+
+
+
+int display_h,display_w;
 	while (!glfwWindowShouldClose(window))
 	{
 		/* Render here */
@@ -163,7 +152,11 @@ int main(int argc, char *argv[])
 		glfwSwapBuffers(window);
 
 		/* Poll for and process events */
-		glfwPollEvents();
+		glfwPollEvents();glfwGetFramebufferSize(window, &display_w, &display_h);
+			glViewport(0, 0, display_w, display_h);
+	
+	glUniform1f(locationw, display_w);
+	glUniform1f(locationh, display_h);
 	}
 
 	glfwTerminate();
