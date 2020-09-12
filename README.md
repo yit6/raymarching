@@ -1,5 +1,9 @@
-Compile on linux:
-Install glew and glfw with package manager
+Compile on Debian:
+Install libglew-dev and libglfw3-dev with package manager
+Run compile.sh
+
+Compile on Archlinux
+Install glew and glfw-x11 with package manager
 Run compile.sh
 
 Compile on Windows 10: 
